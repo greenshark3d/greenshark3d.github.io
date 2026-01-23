@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111111" />
+  <title>Nearby Planner</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">Nearby Planner</div>
+    <button id="btnInstall" class="ghost" hidden>Install</button>
+  </header>
+
+  <main id="app">
+    <section id="page-soon" class="page"></section>
+    <section id="page-search" class="page" hidden></section>
+    <section id="page-add" class="page" hidden></section>
+    <section id="page-saved" class="page" hidden></section>
+    <section id="page-settings" class="page" hidden></section>
+    <section id="page-detail" class="page" hidden></section>
+  </main>
+
+  <nav class="tabs">
+    <button class="tab" data-tab="soon">Soon</button>
+    <button class="tab" data-tab="search">Search</button>
+    <button class="tab" data-tab="add">Add</button>
+    <button class="tab" data-tab="saved">Saved</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
