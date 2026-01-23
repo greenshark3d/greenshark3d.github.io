@@ -286,6 +286,14 @@ function renderAdd(){
         <div><div class="small">Address (optional)</div><input id="plAddr" class="input" placeholder="Street, number..." /></div>
         <div><div class="small">Tags (comma)</div><input id="plTags" class="input" placeholder="wifi, quiet..." /></div>
       </div>
+      <div style="margin-top:10px" class="grid2">
+        <div><div class="small">Website (optional)</div><input id="plWeb" class="input" placeholder="https://..." /></div>
+        <div><div class="small">Facebook / Instagram (optional)</div><input id="plSocial" class="input" placeholder="fb link, ig link..." /></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="small">Notes (optional)</div>
+        <textarea id="plNotes" class="input" placeholder="short notes..."></textarea>
+      </div>
       <div style="margin-top:10px" class="grid3">
         <div><div class="small">Latitude</div><input id="plLat" class="input" placeholder="45.3" /></div>
         <div><div class="small">Longitude</div><input id="plLon" class="input" placeholder="21.9" /></div>
@@ -342,8 +350,12 @@ function renderAdd(){
         <div><div class="small">Country code</div><input id="evCC" class="input" value="${escapeHtml(state.settings.countryCode||"RO")}" /></div>
       </div>
       <div style="margin-top:10px" class="grid2">
-        <div><div class="small">URL (optional)</div><input id="evUrl" class="input" placeholder="https://..." /></div>
-        <div><div class="small">Description (optional)</div><input id="evDesc" class="input" placeholder="notes..." /></div>
+        <div><div class="small">Website (optional)</div><input id="evUrl" class="input" placeholder="https://..." /></div>
+        <div><div class="small">Facebook / Instagram (optional)</div><input id="evSocial" class="input" placeholder="fb link, ig link..." /></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="small">Notes (optional)</div>
+        <textarea id="evDesc" class="input" placeholder="short notes..."></textarea>
       </div>
       <div style="margin-top:10px" class="grid3">
         <div><div class="small">Latitude</div><input id="evLat" class="input" placeholder="" /></div>
@@ -406,6 +418,9 @@ function renderAdd(){
   byId("btnAddPlace").onclick = async ()=>{
     const name = byId("plName").value.trim();
     if(!name){ toast("Name required"); return; }
+    const social = byId("plSocial").value.split(",").map(x=>x.trim()).filter(Boolean);
+    const fb = social.find(x=>x.toLowerCase().includes("facebook.com")) || "";
+    const ig = social.find(x=>x.toLowerCase().includes("instagram.com")) || "";
     const obj = {
       id: uuid(),
       name,
@@ -417,6 +432,10 @@ function renderAdd(){
       lat: byId("plLat").value ? Number(byId("plLat").value) : null,
       lon: byId("plLon").value ? Number(byId("plLon").value) : null,
       openingHours: buildOpeningHours(),
+      website: byId("plWeb").value.trim(),
+      facebook: fb,
+      instagram: ig,
+      notes: byId("plNotes").value.trim(),
       isFavorite: false,
       createdAt: Date.now()
     };
@@ -431,6 +450,9 @@ function renderAdd(){
     if(!title){ toast("Title required"); return; }
     const start = byId("evStart").value;
     if(!start){ toast("Start required"); return; }
+    const esocial = byId("evSocial").value.split(",").map(x=>x.trim()).filter(Boolean);
+    const efb = esocial.find(x=>x.toLowerCase().includes("facebook.com")) || "";
+    const eig = esocial.find(x=>x.toLowerCase().includes("instagram.com")) || "";
     const end = byId("evEnd").value || "";
     const placeId = byId("evPlace").value || "";
     const obj = {
@@ -446,6 +468,8 @@ function renderAdd(){
       lat: byId("evLat").value ? Number(byId("evLat").value) : null,
       lon: byId("evLon").value ? Number(byId("evLon").value) : null,
       url: byId("evUrl").value.trim(),
+      facebook: efb,
+      instagram: eig,
       description: byId("evDesc").value.trim(),
       isFavorite: false,
       createdAt: Date.now()
@@ -461,6 +485,72 @@ function renderSettings(){
   const el = byId("page-settings");
   const s = state.settings;
   const lang = s.language || "en";
+
+  function buildChatGPTTemplate(){
+    // A template designed for mobile copy/paste import. ChatGPT should output ONLY JSON.
+    return `INSTRUCTIONS FOR CHATGPT (IMPORTANT):
+1) Output ONLY valid JSON (no markdown, no explanation text).
+2) Fill in the JSON below using the event screenshot / description I provide.
+3) Use English for titles/descriptions/notes.
+4) startLocal/endLocal must be local time in format: YYYY-MM-DDTHH:MM (example: 2026-02-28T20:00).
+5) recurrence: "none" | "weekly" | "monthly" | "yearly".
+6) countryCode: ISO-2 (RO, DE, etc).
+7) If you don’t know something, set it to null or empty string/array (do NOT invent).
+8) If an event is at a place, set event.place_ref = the place.ref from the places list.
+
+PASTE YOUR RESULT BACK INTO THE APP (Settings → Paste JSON → Preview → Import).
+
+{
+  "categories": [
+    { "type": "place", "name_en": "Pub", "name_ro": "Pub", "name_de": "Pub" },
+    { "type": "event", "name_en": "Concert", "name_ro": "Concert", "name_de": "Konzert" }
+  ],
+  "places": [
+    {
+      "ref": "p1",
+      "name": "",
+      "category": "Pub",
+      "city": "",
+      "countryCode": "RO",
+      "address": "",
+      "lat": null,
+      "lon": null,
+      "website": "",
+      "facebook": "",
+      "instagram": "",
+      "notes": "",
+      "openingHours": {
+        "mon": [{"start":"09:00","end":"17:00"}],
+        "tue": [],
+        "wed": [],
+        "thu": [],
+        "fri": [],
+        "sat": [],
+        "sun": []
+      }
+    }
+  ],
+  "events": [
+    {
+      "title": "",
+      "category": "Concert",
+      "startLocal": "2026-02-28T20:00",
+      "endLocal": null,
+      "recurrence": "none",
+      "city": "",
+      "countryCode": "RO",
+      "lat": null,
+      "lon": null,
+      "place_ref": "p1",
+      "website": "",
+      "facebook": "",
+      "instagram": "",
+      "notes": ""
+    }
+  ]
+}
+`;
+  }
 
   el.innerHTML = `
     <div class="card">
@@ -521,9 +611,39 @@ function renderSettings(){
     </div>
 
     <div class="card">
+      <h3>Quick import (ChatGPT) — mobile copy/paste</h3>
+      <div class="small">
+        1) Tap <b>Copy template</b> → paste it into ChatGPT.<br/>
+        2) Give ChatGPT a screenshot / description.<br/>
+        3) Copy ChatGPT’s JSON output.<br/>
+        4) Paste it below → <b>Preview</b> → <b>Import</b>.
+      </div>
+      <div style="margin-top:10px">
+        <div class="small">Template to copy (includes instructions for ChatGPT)</div>
+        <textarea id="tplBox" class="input" readonly style="min-height:180px"></textarea>
+        <div class="row" style="margin-top:10px; flex-wrap:wrap">
+          <button id="btnCopyTpl" class="btn">Copy template</button>
+        </div>
+      </div>
+
+      <hr/>
+
+      <div style="margin-top:10px">
+        <div class="small">Paste ChatGPT JSON here</div>
+        <textarea id="pasteBox" class="input" placeholder='Paste JSON here...' style="min-height:160px"></textarea>
+        <div class="row" style="margin-top:10px; flex-wrap:wrap">
+          <button id="btnPreviewPaste" class="btn">Preview</button>
+          <button id="btnImportPaste" class="btn primary">Import</button>
+        </div>
+        <div id="pastePreview" class="small" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>${escapeHtml(t(lang,"dataTools"))}</h3>
       <div class="row" style="flex-wrap:wrap; gap:10px">
         <button id="btnExport" class="btn">Export JSON</button>
+        <button id="btnCopyExport" class="btn">Copy export JSON</button>
         <label class="btn" style="cursor:pointer">
           Import JSON <input id="impJson" type="file" accept="application/json" hidden />
         </label>
@@ -540,6 +660,198 @@ function renderSettings(){
 
   byId("setLang").value = lang;
   byId("setLocSrc").value = s.useDeviceLocation ? "device" : "manual";
+
+  // Quick template box
+  const tpl = buildChatGPTTemplate();
+  byId("tplBox").value = tpl;
+
+  async function copyTextToClipboard(txt){
+    try{
+      await navigator.clipboard.writeText(txt);
+      toast("Copied");
+      return true;
+    }catch(_){
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand("copy"); toast("Copied"); }catch(e){ toast("Copy failed"); }
+      ta.remove();
+      return false;
+    }
+  }
+
+  byId("btnCopyTpl").onclick = ()=>copyTextToClipboard(tpl);
+
+  function extractJsonFromPaste(raw){
+    const a = raw.indexOf("{");
+    const b = raw.lastIndexOf("}");
+    if(a>=0 && b>a) return raw.slice(a, b+1);
+    return raw.trim();
+  }
+
+  function normalizeLocalDT(s){
+    if(!s) return null;
+    const x = String(s).trim().replace(" ", "T");
+    // Keep YYYY-MM-DDTHH:MM
+    if(x.length >= 16) return x.slice(0,16);
+    return x;
+  }
+
+  let _previewPayload = null;
+
+  byId("btnPreviewPaste").onclick = ()=>{
+    const raw = byId("pasteBox").value;
+    if(!raw.trim()){ toast("Paste JSON first"); return; }
+    try{
+      const jsonText = extractJsonFromPaste(raw);
+      const data = JSON.parse(jsonText);
+      const cats = Array.isArray(data.categories) ? data.categories.length : 0;
+      const pls  = Array.isArray(data.places) ? data.places.length : 0;
+      const evs  = Array.isArray(data.events) ? data.events.length : 0;
+      _previewPayload = data;
+      byId("pastePreview").innerHTML = `Preview: <b>${cats}</b> categories, <b>${pls}</b> places, <b>${evs}</b> events will be imported.`;
+      toast("Preview ready");
+    }catch(e){
+      _previewPayload = null;
+      byId("pastePreview").textContent = "Preview failed: invalid JSON.";
+      toast("Invalid JSON");
+    }
+  };
+
+  byId("btnImportPaste").onclick = async ()=>{
+    const raw = byId("pasteBox").value;
+    if(!raw.trim()){ toast("Paste JSON first"); return; }
+
+    let data = _previewPayload;
+    if(!data){
+      try{
+        data = JSON.parse(extractJsonFromPaste(raw));
+      }catch(e){
+        toast("Invalid JSON");
+        return;
+      }
+    }
+
+    const catsIn = Array.isArray(data.categories) ? data.categories : [];
+    const placesIn = Array.isArray(data.places) ? data.places : [];
+    const eventsIn = Array.isArray(data.events) ? data.events : [];
+
+    const ok = confirm(`Import ${catsIn.length} categories, ${placesIn.length} places, ${eventsIn.length} events?`);
+    if(!ok) return;
+
+    // Build lookup existing categories by (type + name_en)
+    await loadAll();
+    const catKeyToId = new Map();
+    for(const c of state.categories){
+      catKeyToId.set(`${c.type}::${(c.name_en||"").toLowerCase()}`, c.id);
+    }
+
+    // 1) Categories
+    for(const c of catsIn){
+      if(!c || !c.type) continue;
+      const type = String(c.type).toLowerCase() === "event" ? "event" : "place";
+      const name_en = String(c.name_en || "").trim();
+      if(!name_en) continue;
+      const key = `${type}::${name_en.toLowerCase()}`;
+      const existsId = catKeyToId.get(key);
+      if(existsId){
+        // Optional: update translations if provided
+        const existing = state.categories.find(x=>x.id===existsId);
+        if(existing){
+          existing.name_ro = c.name_ro || existing.name_ro;
+          existing.name_de = c.name_de || existing.name_de;
+          await put(db,"categories", existing);
+        }
+      }else{
+        const obj = {
+          id: uuid(),
+          type,
+          name_en,
+          name_ro: c.name_ro || "",
+          name_de: c.name_de || ""
+        };
+        await put(db,"categories", obj);
+        catKeyToId.set(key, obj.id);
+      }
+    }
+
+    await loadAll();
+
+    // Rebuild category name to id helper (by name_en only, both types)
+    const catNameToId = new Map();
+    for(const c of state.categories){
+      catNameToId.set(`${c.type}::${(c.name_en||"").toLowerCase()}`, c.id);
+    }
+
+    // 2) Places
+    const placeRefToId = new Map();
+    for(const p of placesIn){
+      if(!p || !p.name) continue;
+      const catName = String(p.category || "").trim();
+      const catId = catName ? (catNameToId.get(`place::${catName.toLowerCase()}`) || null) : null;
+      const obj = {
+        id: uuid(),
+        name: String(p.name).trim(),
+        categoryId: catId || state.categories.find(c=>c.type==="place")?.id || state.categories[0]?.id,
+        city: String(p.city || "").trim(),
+        countryCode: String(p.countryCode || state.settings.countryCode || "RO").trim().toUpperCase(),
+        address: String(p.address || "").trim(),
+        tags: Array.isArray(p.tags) ? p.tags.map(x=>String(x).trim()).filter(Boolean) : [],
+        lat: p.lat==null || p.lat==="" ? null : Number(p.lat),
+        lon: p.lon==null || p.lon==="" ? null : Number(p.lon),
+        openingHours: p.openingHours && typeof p.openingHours==="object" ? p.openingHours : {mon:[],tue:[],wed:[],thu:[],fri:[],sat:[],sun:[]},
+        website: String(p.website || "").trim(),
+        facebook: String(p.facebook || "").trim(),
+        instagram: String(p.instagram || "").trim(),
+        notes: String(p.notes || "").trim(),
+        isFavorite: !!p.isFavorite,
+        createdAt: Date.now()
+      };
+      await put(db,"places", obj);
+      if(p.ref) placeRefToId.set(String(p.ref), obj.id);
+    }
+
+    await loadAll();
+
+    // 3) Events
+    for(const e of eventsIn){
+      if(!e || !e.title || !e.startLocal) continue;
+      const catName = String(e.category || "").trim();
+      const catId = catName ? (catNameToId.get(`event::${catName.toLowerCase()}`) || null) : null;
+      const placeId = e.place_ref ? (placeRefToId.get(String(e.place_ref)) || null) : null;
+
+      const obj = {
+        id: uuid(),
+        title: String(e.title).trim(),
+        categoryId: catId || state.categories.find(c=>c.type==="event")?.id || state.categories[0]?.id,
+        startLocal: normalizeLocalDT(e.startLocal),
+        endLocal: e.endLocal ? normalizeLocalDT(e.endLocal) : null,
+        recurrence: ["none","weekly","monthly","yearly"].includes(String(e.recurrence||"none")) ? String(e.recurrence) : "none",
+        placeId: placeId || null,
+        city: String(e.city || "").trim(),
+        countryCode: String(e.countryCode || state.settings.countryCode || "RO").trim().toUpperCase(),
+        lat: e.lat==null || e.lat==="" ? null : Number(e.lat),
+        lon: e.lon==null || e.lon==="" ? null : Number(e.lon),
+        url: String(e.website || e.url || "").trim(),
+        facebook: String(e.facebook || "").trim(),
+        instagram: String(e.instagram || "").trim(),
+        description: String(e.notes || e.description || "").trim(),
+        isFavorite: !!e.isFavorite,
+        createdAt: Date.now()
+      };
+      await put(db,"events", obj);
+    }
+
+    await loadAll();
+    await ensureLocation();
+    toast("Imported");
+    byId("pasteBox").value = "";
+    byId("pastePreview").textContent = "";
+    _previewPayload = null;
+    renderCurrent("settings");
+  };
 
   byId("setGeocodeCity").onclick = async ()=>{
     const city = byId("setCity").value.trim();
@@ -591,6 +903,17 @@ function renderSettings(){
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  };
+
+  byId("btnCopyExport").onclick = async ()=>{
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      settings: state.settings,
+      categories: state.categories,
+      places: state.places,
+      events: state.events,
+    };
+    await copyTextToClipboard(JSON.stringify(payload, null, 2));
   };
 
   byId("impJson").onchange = async (e)=>{
@@ -645,6 +968,8 @@ function renderSettings(){
           lat: null,
           lon: null,
           url: it.url || "",
+          facebook: "",
+          instagram: "",
           description: it.description || "",
           isFavorite: false,
           createdAt: Date.now()
@@ -673,6 +998,7 @@ function renderSettings(){
     renderCurrent("settings");
   };
 }
+
 
 function renderDetail(){
   const el = byId("page-detail");
@@ -707,7 +1033,11 @@ function renderDetail(){
         </div>
         <hr/>
         <div class="row" style="flex-wrap:wrap">
-          <button class="btn" id="btnNav">Navigate</button>
+          ${pl.lat!=null && pl.lon!=null ? `<button class="btn" id="btnNav">Open in Google Maps</button>` : ``}
+          ${pl.website ? `<button class="btn" id="btnWeb">Website</button>` : ``}
+          ${pl.facebook ? `<button class="btn" id="btnFb">Facebook</button>` : ``}
+          ${pl.instagram ? `<button class="btn" id="btnIg">Instagram</button>` : ``}
+          ${pl.notes ? `<button class="btn" id="btnNotes">Notes</button>` : ``}
           <button class="btn" id="btnEdit">Edit</button>
           <button class="btn danger" id="btnDel">Delete</button>
         </div>
@@ -718,11 +1048,20 @@ function renderDetail(){
         <pre style="white-space:pre-wrap; margin:0; color:var(--muted)">${escapeHtml(JSON.stringify(pl.openingHours||{}, null, 2))}</pre>
       </div>
     `;
-    byId("btnNav").onclick = ()=>{
+    const navBtn = byId("btnNav");
+    if(navBtn) navBtn.onclick = ()=>{
       if(pl.lat==null || pl.lon==null){ toast("No coordinates"); return; }
       const url = `https://www.google.com/maps/dir/?api=1&destination=${pl.lat},${pl.lon}`;
       window.open(url, "_blank");
     };
+    const webBtn = byId("btnWeb");
+    if(webBtn) webBtn.onclick = ()=>{ window.open(pl.website, "_blank"); };
+    const fbBtn = byId("btnFb");
+    if(fbBtn) fbBtn.onclick = ()=> window.open(pl.facebook, "_blank");
+    const igBtn = byId("btnIg");
+    if(igBtn) igBtn.onclick = ()=> window.open(pl.instagram, "_blank");
+    const notesBtn = byId("btnNotes");
+    if(notesBtn) notesBtn.onclick = ()=> alert(pl.notes);
     byId("btnDel").onclick = async ()=>{
       if(!confirm("Delete this place?")) return;
       await del(db,"places", pl.id);
@@ -780,7 +1119,11 @@ function renderDetail(){
         <hr/>
         <div class="row" style="flex-wrap:wrap">
           <button class="btn" id="btnIcs">Export ICS</button>
-          <button class="btn" id="btnNav">Navigate</button>
+          ${lat!=null && lon!=null ? `<button class="btn" id="btnNav">Open in Google Maps</button>` : ``}
+          ${ev.url ? `<button class="btn" id="btnWeb">Website</button>` : ``}
+          ${ev.facebook ? `<button class="btn" id="btnFb">Facebook</button>` : ``}
+          ${ev.instagram ? `<button class="btn" id="btnIg">Instagram</button>` : ``}
+          ${ev.description ? `<button class="btn" id="btnNotes">Notes</button>` : ``}
           <button class="btn" id="btnEdit">Edit</button>
           <button class="btn danger" id="btnDel">Delete</button>
         </div>
@@ -807,11 +1150,20 @@ function renderDetail(){
       exportICSFile("event.ics", ics);
     };
 
-    byId("btnNav").onclick = ()=>{
+    const navBtn = byId("btnNav");
+    if(navBtn) navBtn.onclick = ()=>{
       if(lat==null || lon==null){ toast("No coordinates"); return; }
       const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
       window.open(url, "_blank");
     };
+    const webBtn = byId("btnWeb");
+    if(webBtn) webBtn.onclick = ()=> window.open(ev.url, "_blank");
+    const fbBtn = byId("btnFb");
+    if(fbBtn) fbBtn.onclick = ()=> window.open(ev.facebook, "_blank");
+    const igBtn = byId("btnIg");
+    if(igBtn) igBtn.onclick = ()=> window.open(ev.instagram, "_blank");
+    const notesBtn = byId("btnNotes");
+    if(notesBtn) notesBtn.onclick = ()=> alert(ev.description);
 
     byId("btnDel").onclick = async ()=>{
       if(!confirm("Delete this event?")) return;
@@ -860,6 +1212,14 @@ function openEditPlace(pl){
       <div style="margin-top:10px" class="grid2">
         <div><div class="small">Address</div><input id="ePlAddr" class="input" value="${escapeHtml(pl.address||"")}" /></div>
         <div><div class="small">Tags (comma)</div><input id="ePlTags" class="input" value="${escapeHtml((pl.tags||[]).join(", "))}" /></div>
+      </div>
+      <div style="margin-top:10px" class="grid2">
+        <div><div class="small">Website</div><input id="ePlWeb" class="input" value="${escapeHtml(pl.website||"")}" /></div>
+        <div><div class="small">Facebook</div><input id="ePlFb" class="input" value="${escapeHtml(pl.facebook||"")}" /></div>
+      </div>
+      <div style="margin-top:10px" class="grid2">
+        <div><div class="small">Instagram</div><input id="ePlIg" class="input" value="${escapeHtml(pl.instagram||"")}" /></div>
+        <div><div class="small">Notes</div><input id="ePlNotes" class="input" value="${escapeHtml(pl.notes||"")}" /></div>
       </div>
       <div style="margin-top:10px" class="grid3">
         <div><div class="small">Lat</div><input id="ePlLat" class="input" value="${pl.lat??""}" /></div>
@@ -935,6 +1295,10 @@ function openEditPlace(pl){
     pl.lat = byId("ePlLat").value ? Number(byId("ePlLat").value) : null;
     pl.lon = byId("ePlLon").value ? Number(byId("ePlLon").value) : null;
     pl.openingHours = buildOpeningHours();
+    pl.website = byId("ePlWeb").value.trim();
+    pl.facebook = byId("ePlFb").value.trim();
+    pl.instagram = byId("ePlIg").value.trim();
+    pl.notes = byId("ePlNotes").value.trim();
 
     await put(db,"places", pl);
     await loadAll();
@@ -987,8 +1351,12 @@ function openEditEvent(ev){
         <div><div class="small">Country</div><input id="eEvCC" class="input" value="${escapeHtml(ev.countryCode||"")}" /></div>
       </div>
       <div style="margin-top:10px" class="grid2">
-        <div><div class="small">URL</div><input id="eEvUrl" class="input" value="${escapeHtml(ev.url||"")}" /></div>
-        <div><div class="small">Description</div><input id="eEvDesc" class="input" value="${escapeHtml(ev.description||"")}" /></div>
+        <div><div class="small">Website</div><input id="eEvUrl" class="input" value="${escapeHtml(ev.url||"")}" /></div>
+        <div><div class="small">Notes</div><input id="eEvDesc" class="input" value="${escapeHtml(ev.description||"")}" /></div>
+      </div>
+      <div style="margin-top:10px" class="grid2">
+        <div><div class="small">Facebook</div><input id="eEvFb" class="input" value="${escapeHtml(ev.facebook||"")}" /></div>
+        <div><div class="small">Instagram</div><input id="eEvIg" class="input" value="${escapeHtml(ev.instagram||"")}" /></div>
       </div>
       <div style="margin-top:10px" class="grid3">
         <div><div class="small">Lat</div><input id="eEvLat" class="input" value="${ev.lat??""}" /></div>
@@ -1032,6 +1400,8 @@ function openEditEvent(ev){
     ev.countryCode = (byId("eEvCC").value.trim() || "").toUpperCase();
     ev.url = byId("eEvUrl").value.trim();
     ev.description = byId("eEvDesc").value.trim();
+    ev.facebook = byId("eEvFb").value.trim();
+    ev.instagram = byId("eEvIg").value.trim();
     ev.lat = byId("eEvLat").value ? Number(byId("eEvLat").value) : null;
     ev.lon = byId("eEvLon").value ? Number(byId("eEvLon").value) : null;
 

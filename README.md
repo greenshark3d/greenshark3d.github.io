@@ -29,3 +29,12 @@ npx serve .
 ## Notes
 - Location: device GPS (if allowed) or manual city/coordinates in Settings.
 - Geocoding uses OpenStreetMap Nominatim.
+
+
+## Quick import on mobile (ChatGPT copy/paste)
+1) Open **Settings → Quick import (ChatGPT)**  
+2) Tap **Copy template** and paste it into ChatGPT.
+3) Give ChatGPT a screenshot / description, and tell it to output **ONLY JSON**.
+4) Copy the JSON back into **Paste ChatGPT JSON** → **Preview** → **Import**.
+
+Tip: In ChatGPT, you can attach an event screenshot; the template is designed so the output can be pasted directly into the app.
